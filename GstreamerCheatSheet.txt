@@ -1,0 +1,149 @@
+		####################################
+		#   GStreamer Plugins and Scripts  #
+ 		#            By TahmooR N          #
+	        #        Tahmoor123@gmail.com      #
+		####################################
+
+
+
+######
+Running cameras using vlc
+######
+
+Easy way to get camera up is to just run a Vlc script on the terminal>>
+Note: for this script to run you need a vlc player in a working condition and upto date.
+
+"cvlc -v v4l2:///dev/video0:chroma="H264":width=1024:height=570:fps=30"
+
+Note: you can run more than one camera with this script just combining 2 scripts and just changing video0 to video1 for second camera, or run it seprate..
+
+
+
+
+######
+Running 2 cameras with the pipeline
+######
+
+"gst-launch-0.10 v4l2src device=/dev/video0 ! video/x-raw-yuv,width=320,height=240 ! videobox left=-320 border-alpha=0 ! queue ! videomixer name=mix ! ffmpegcolorspace ! xvimagesink v4l2src device=/dev/video1 ! video/x-raw-yuv,width=320,height=240 ! videobox left=1 ! queue ! mix."
+
+This is activate the your laptop camera # video0 and usb camera video1 with a width=320,height=240.. if you camera has any lag you can lower your framerate like this example..
+".../dev/video1 ! video/x-raw-yuv,width=320,height=240,framerate =30/1" or framerate = 25/1..depends on how you want it..
+
+
+
+
+######
+Running 3 cameras with the Gstreamer pipeline
+######
+
+when you are running 3 or more cameras its better to use the frame rate either 25/1 or 30/1, because there is lots of load on system and it will overflow the buffer and will give you lag on your output.
+
+here is the terminal script>>
+
+"gst-launch-0.10 v4l2src device=/dev/video0 ! video/x-raw-yuv,width=320,height=240,framerate=30/1 ! alpha ! queue ! videomixer name=mix ! ffmpegcolorspace ! \
+  xvimagesink sync=false \
+  v4l2src device=/dev/video1 ! video/x-raw-yuv,width=320,height=240,framerate=30/1 ! alpha ! videobox left=-320 border-alpha=0 ! queue ! mix. \
+  v4l2src device=/dev/video2 ! video/x-raw-yuv,width=320,height=240,framerate=30/1 ! alpha ! videobox top=-240 border-alpha=0 ! queue ! mix. \
+  v4l2src device=/dev/video3 ! video/x-raw-yuv,width=320,height=240,framerate=30/1 ! alpha ! videobox left=-320 top=-240 border-alpha=0 ! queue ! mix."
+
+
+i know its long but yes this is best i can come up with..
+Note it all depends of your system, you might have to change some setting to be able to work with this script.
+
+
+
+
+
+		###############################
+		#Plugins you need to download #
+		###############################
+
+First of all the important part is to install the latest version of Gtreamer>>
+Here are the lastest plugins you need to have before running any of the above script..
+
+open up the terminal and type:
+
+sudo apt-get install and then these>>
+
+gstreamer1.0-alsa               gstreamer1.0-plugins-base-dbg
+gstreamer1.0-clutter            gstreamer1.0-plugins-base-doc
+gstreamer1.0-crystalhd          gstreamer1.0-plugins-good
+gstreamer1.0-doc                gstreamer1.0-plugins-good-dbg
+gstreamer1.0-libav              gstreamer1.0-plugins-good-doc
+gstreamer1.0-libav-dbg          gstreamer1.0-plugins-ugly
+gstreamer1.0-nice               gstreamer1.0-plugins-ugly-dbg
+gstreamer1.0-plugins-bad        gstreamer1.0-plugins-ugly-doc
+gstreamer1.0-plugins-bad-dbg    gstreamer1.0-pulseaudio
+gstreamer1.0-plugins-bad-doc    gstreamer1.0-tools
+gstreamer1.0-plugins-base       gstreamer1.0-x
+gstreamer1.0-plugins-base-apps
+
+or just type sudo apt-get install gstreamer1.0
+
+this command will download all of them..
+
+
+next you need to download Video for linux
+
+here is how to download it..
+
+sudo apt-get install v4l2loopback-dkms    
+sudo apt-get install v4l2loopback-utils   
+sudo apt-get install v4l2loopback-source
+sudo apt-get install v4l2ucp 
+
+
+NETWORK STREAMING
+
+1)
+server side:
+
+gst-launch v4l2src device=/dev/video1 ! ffenc_mpeg4 ! rtpmp4vpay send-config=true ! udpsink host=127.0.0.1 port=5000
+
+
+client side
+
+gst-launch udpsrc uri=udp://127.0.0.1:5000 caps="application/x-rtp, media=(string)video, clock-rate=(int)90000, encoding-name=(string)MP4V-ES, profile-level-id=(string)1, config=(string)000001b001000001b58913000001000000012000c48d88007d0a041e1463000001b24c61766335322e3132332e30, payload=(int)96, ssrc=(uint)298758266, clock-base=(uint)3097828288, seqnum-base=(uint)63478" ! rtpmp4vdepay ! ffdec_mpeg4 ! autovideosink
+
+
+
+2)
+
+SERVER SIDE:
+
+gst-launch v4l2src device=/dev/video0 ! 'video/x-raw-yuv,width=640,height=480' !  x264enc pass=qual quantizer=20 tune=zerolatency ! rtph264pay ! udpsink host=127.0.0.1 port=1234
+
+
+CLIENT SIDE:
+gst-launch udpsrc port=1234 ! "application/x-rtp, payload=127" ! rtph264depay ! ffdec_h264 ! xvimagesink sync=false
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
